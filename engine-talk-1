@@ -1,0 +1,943 @@
+Introduction and context
+0:05
+Hey, everybody.
+0:07
+We are really excited about the announcement and the launch of LangSmith Engine.
+0:13
+We really see this, as Harrison said in his keynote, as the future of agent observability
+0:19
+and of evaluation and of spinning this agent improvement loop.
+0:23
+And what we want to do today is walk you through the process by which we landed
+0:27
+on what is now Engine — this agent that runs on LangSmith.
+0:32
+To start: here at LangChain, we're the Agent Engineering Platform.
+LangChain as the Agent Engineering Platform
+0:38
+So as you might imagine, we love to build agents.
+0:42
+And we'd like to think that we're pretty good at it.
+0:44
+Internally, we have built a ton of them, including a go-to-market agent.
+Our go-to-market agent and the problems we hit
+0:50
+This go-to-market agent does account research for our go-to-market team.
+0:54
+It does account outreach for our customers as well.
+0:57
+And as we were building and improving this agent,
+0:59
+we saw a ton of different problems
+1:01
+that we would run into over and over.
+1:03
+The first being: even as we were carefully
+1:07
+and meticulously monitoring and observing
+1:08
+what our agent was doing in the wild,
+1:11
+we would still get the inevitable message
+1:13
+from our go-to-market team saying,
+1:14
+"Hey, something is broken.
+1:15
+This didn't work as it should have,"
+1:17
+even though we had been monitoring very closely.
+1:20
+And for each one of those issues
+1:21
+that would be brought up to us,
+1:22
+the fix was oftentimes very straightforward,
+1:24
+but tons of these very small fixes started to add up,
+1:27
+they'd get deprioritized, et cetera.
+1:30
+And with each one of these fixes,
+1:32
+the process of creating good evals
+1:33
+to ensure that there aren't regressions is very tedious.
+1:36
+And so oftentimes we would find ourselves
+1:38
+encountering these micro-regressions.
+1:40
+And these are problems that, as I talk to customers,
+1:43
+I see all the time — our customers
+1:45
+are building agents as well.
+Why the current process is broken (customer pain)
+1:47
+They are looking through their traces
+1:50
+in a very manual way, which is extremely error-prone.
+1:55
+They are finding that a lot of these small fixes
+1:57
+that they need for their agent to perform well
+1:59
+are not getting prioritized
+2:00
+because there are just so many minor ones.
+2:03
+And like Harrison said in his keynote,
+2:05
+this feels like a game of whack-a-mole.
+2:06
+I'm gonna fix one problem over here
+2:08
+and another is gonna spring up
+2:09
+because this process of creating good evals is very difficult.
+2:12
+And so what we wanted to build was an agent
+2:15
+that would do this for us
+2:16
+and resolve these different problems for us —
+2:18
+something that would find our issues automatically,
+2:22
+something that would fix those issues,
+2:23
+and something that would add testing
+2:25
+to prevent regressions in the future.
+2:28
+And ideally, something that would be doing this all the time
+2:30
+so that our team could be focusing
+2:32
+on expanding the functionality of the agent
+2:33
+instead of fixing these irritating bugs and errors.
+2:38
+And what I'm excited to walk you through
+2:39
+is what we landed on with LangSmith Engine.
+2:42
+I want to show you what that looks like in the UI.
+2:45
+LangSmith Engine will identify errors
+What we set out to build
+2:49
+from your traces in your tracing project,
+2:51
+and it will present them in this prioritized inbox
+2:54
+on the left.
+2:55
+Each issue has a description
+2:56
+and a timeline of its occurrence,
+2:58
+so I can see if this is something new or something
+3:00
+that's been going on for a long time.
+3:02
+And if I want to dive deeper into any of these offending
+3:04
+traces, I can click into them right here on the page
+3:07
+and see exactly what might have occurred
+3:09
+with a customer.
+3:10
+And so I can gut-check: is this a real issue
+3:12
+and something I need to fix?
+Engine proposes fixes and opens PRs
+3:14
+Engine goes beyond diagnosing problems
+3:18
+and actually works to fix those problems as well.
+3:20
+So here you can see there's an adjustment to my prompt
+3:23
+that's being proposed, as well as an adjustment to one
+3:25
+of my agent files.
+3:27
+And if I want to open a PR right here on the page,
+3:29
+I can do so very easily.
+Custom online evaluators
+3:32
+The process of finding the important problems
+3:35
+is also very difficult.
+3:36
+And so Engine creates custom online evaluators that are
+3:39
+tailored to this exact problem,
+3:41
+so that if it recurs in any way, you can catch it.
+Dataset examples for offline evals
+3:46
+The last part of this process that is so painful
+3:49
+is the creation of dataset examples for your offline evals.
+3:53
+Engine also makes this much easier
+3:54
+by taking the errored inputs that you've seen in production
+3:57
+and creating a version of ground truth
+4:00
+from each one of those examples.
+4:01
+So you can see here I have the various inputs
+4:03
+that I've seen in production, the wrong outputs that
+4:06
+have been generated for a customer
+4:08
+by our earlier version of the agent,
+4:10
+and ideally what we'd like to see.
+4:11
+And this is created via assertions.
+4:13
+And so we can add this to a dataset
+4:15
+or edit it in the annotation queue.
+4:17
+If we have any concerns, we can edit what that ground truth looks like.
+4:20
+So really excited about the way that this connects
+4:22
+and strings together all the different components
+4:24
+of that agent engineering loop.
+Architecture overview: how Engine works end-to-end
+4:28
+Engine is an agent, like we've talked about.
+4:30
+It pulls these different error traces,
+4:33
+clusters them into issues for you.
+4:35
+These are issues that you can act on very easily —
+4:37
+it generates fixes for you, and then works
+4:40
+to improve your evaluation suite as well,
+4:42
+whether that's your online evals
+4:43
+or whether that's your offline evals.
+4:46
+Now, the version of Engine that you just saw
+4:48
+and that we're describing is working with a handful
+4:51
+of our customers today.
+4:53
+We have about 15 customers that are really great
+4:56
+and are helping us improve this version of Engine —
+4:59
+from Clay to Vanta to Campfire.
+5:03
+They have given us really great feedback
+5:04
+that Engine is changing not just the way
+5:07
+that they interact with LangSmith,
+5:08
+but the way that they are engineering their agents entirely,
+5:10
+and it's facilitating that process so much.
+5:14
+But the product that they're using
+5:15
+and that we just walked through
+5:16
+is not what we first started with.
+Early customers: Clay, Vanta, Campfire
+5:18
+I want to talk to you about the earliest version of Engine.
+The first version: a wind-up toy
+5:23
+If Engine is like this motor —
+5:24
+this powerhouse of that agent improvement loop —
+5:27
+the first version was kind of like a wind-up toy.
+5:31
+What we created was something
+5:33
+that would take our LangSmith traces,
+5:35
+automatically send them to a coding agent,
+5:37
+which would spin up a PR and run on a GitHub Action
+5:40
+continuously.
+5:41
+It was a little hacky, but it worked.
+5:44
+And we started to surface different issues
+5:46
+from our traces on our internal agents.
+5:48
+The very first PR that was created
+5:51
+by this early version of Engine was a real problem —
+5:55
+a tool call that was failing
+5:57
+silently in one of our agents.
+5:58
+Engine added some error handling for that.
+6:01
+Not a huge fix by any means, but it
+6:05
+was a real problem that was addressed by this agent.
+6:07
+We were excited about that,
+6:08
+but even more excited about the subsequent fixes that we saw.
+6:12
+Here's another one, for one of our internal agents
+6:15
+that is an asynchronous coding agent
+6:17
+that can be invoked via Slack.
+6:19
+Engine picked up that a lot of our users
+6:22
+were requesting that the agent review the PR comments
+6:25
+for the PRs that had been created by this agent.
+6:28
+And OpenSWE — that's the name of our coding agent —
+6:31
+would respond: I don't have that functionality,
+6:33
+I can't help you with this.
+6:34
+Engine picked up on these users getting unsatisfactory responses and created
+6:42
+a PR to extend the functionality of the agent.
+6:44
+And this is where we started to get really excited, feeling like this is not just going
+6:49
+to find issues, but is going to improve our agent in all these different dimensions.
+The false positive problem ("Show me the man")
+6:54
+Obviously this first version of Engine needed some work.
+6:57
+One of the very first problems we recognized with Engine was that it was too
+7:02
+good at finding problems — it would oftentimes find problems that weren't real. There's a
+7:09
+Soviet-era quote: "Show me the man and I'll show you the crime." This is exactly what
+7:16
+Engine was doing — finding crimes in all sorts of traces where there weren't any.
+7:22
+What we quickly realized was that the process of finding and identifying real and
+7:27
+meaningful issues and distilling those into actionable buckets that we could work on was
+7:35
+the most important part of the process.
+7:36
+The generation of the right fix and the creation of evals afterward was definitely
+7:41
+connected to the identification of meaningful errors.
+7:44
+And so a lot of our structural and architectural thinking was centered around this:
+7:49
+how can we find good and meaningful errors?
+Architecture deep dive: orchestration and sandboxes
+7:53
+Jumping into more of the architecture — I want to highlight something that I think is
+7:57
+really remarkable: to power Engine and this agent, we are using all sorts
+8:02
+of LangChain products — whether that's our deep agents framework that Viv works on, or
+8:07
+whether that's our newly announced LangSmith Sandboxes. These are all powering this agent
+8:12
+under the hood. Now, getting more into the weeds, LangSmith Engine is
+8:17
+triggered from a whole set of different sources. An agent can kick it off ad hoc, but by default,
+8:23
+it runs on a schedule.
+8:24
+Whenever it's kicked off and triggered,
+8:27
+that hits our LangSmith backend.
+8:29
+That feeds into this multi-tenant orchestration
+8:32
+with this distributed task queue that we have
+8:35
+on our LangSmith backend.
+8:36
+And that all feeds into a single LangSmith deployment
+8:39
+that serves all of the different tenants.
+8:41
+All of the agents that we have being improved by Engine
+8:44
+are all on this single LangSmith deployment,
+8:46
+where we have these deep agents running
+8:48
+and improving based on those traces.
+8:51
+These deep agents are pulling in traces
+8:53
+and the source code of the agents that we're running
+8:56
+into a LangSmith Sandbox — one for each run.
+8:59
+And this process that you can see here
+9:02
+is really just the process of identification of issues.
+9:06
+We decided early on that because of the massive context
+9:09
+required to look through
+9:10
+and investigate these different traces,
+9:13
+it was better for us to split out the functionality —
+9:16
+the identification of issues
+9:17
+from the actual fixes to those issues.
+9:19
+And so you can see here there's this section
+9:21
+for fixes — it looks very similar to the graph you're seeing, and it's just
+9:26
+this version specifically meant to create fixes and attach those to the various issues that
+9:31
+we find.
+9:33
+So once this set of issues is defined and each issue has a defined fix, we surface that
+9:38
+to the user in the UI.
+9:40
+And all of this — I'll note — all of this is being traced via LangSmith, and this is
+9:44
+what we're using to understand how our agent is performing.
+Why traces are the most valuable input
+9:49
+Now, I've mentioned that Engine ingests traces of our users.
+9:54
+I want to drive home the point that traces are far and away the most valuable
+9:59
+input that Engine operates with.
+10:02
+The code of your agent is valuable, obviously, but it doesn't do a great job of telling you
+10:07
+how your agent will perform in the wild.
+10:09
+There's a massive amount of non-determinism when building with agents.
+10:13
+And so the traces really are the window to the agent's soul — how it will perform in
+10:18
+the wild. That is what powers Engine and all of its functionality. We don't ingest the entirety
+10:25
+of every single trace being sent to LangSmith to power Engine. Instead, we
+10:30
+send it a condensed and summarized version of your traces. The agent has the ability
+10:36
+to grab and investigate and look through those traces more closely, looking for patterns
+10:42
+that it thinks are interesting or might hold some kind of error.
+Connecting source code for PR generation
+10:47
+We also rely on our customers' source code.
+10:52
+This can optionally be connected into Engine so that we can more accurately diagnose
+10:57
+fixes, as well as create PRs to very quickly address the problems that Engine will
+11:04
+surface.
+11:05
+But like I said, the traces are really what inform so much of what powers Engine.
+Types of fixes Engine generates
+11:10
+When it comes to the actual fixes that are proposed,
+11:12
+sometimes these are small fixes.
+11:14
+Sometimes it's a minor prompt adjustment.
+11:17
+Sometimes that's an adjustment to your skills file
+11:19
+or your agent's markdown file.
+11:20
+And many times it's an adjustment to the actual code
+11:23
+of the agent's structure.
+11:25
+What I'm really excited about is not just
+11:27
+the actual code adjustment, but this contribution back
+11:29
+into your evaluation suite —
+11:31
+whether that's creating online evaluators to catch
+11:33
+those problems that keep occurring,
+11:35
+or creating these regression examples
+11:37
+as we talked through during that demo.
+11:40
+That process of taking an input you've seen in production
+11:43
+with a bad or unsatisfactory output
+11:45
+and creating a ground truth reference output
+11:48
+is very tedious today.
+11:49
+And so I'm really excited about the way Engine proposes
+11:51
+what ground truth might or should
+11:53
+look like for those different inputs.
+11:57
+And then lastly, we want Engine to work really well
+11:59
+for our customers and for the different priorities
+12:01
+that they have.
+Learning from customers: the preference problem
+12:02
+When we launched the first more formal version of Engine
+12:06
+to that group of customers I mentioned earlier,
+12:09
+we saw an important learning:
+12:12
+what's a high-priority issue for one of our customers
+12:15
+and one of their teams using Engine might be very uninteresting
+12:18
+to another team.
+12:20
+We had a customer reach out to me early on saying,
+12:22
+"This is working great.
+12:24
+You guys are finding really important places
+12:26
+where my agent is hallucinating or leaking sensitive data.
+12:30
+Please stop showing me issues related to our context
+12:33
+being bloated.
+12:34
+We don't care.
+12:34
+Our agent is working great."
+12:38
+On the other hand, we'd have customers saying,
+12:40
+"This is awesome.
+12:40
+You're pointing out places where our cost is too high,
+12:43
+our latency is way too high.
+12:45
+Please stop showing us places where our agent is
+12:47
+hallucinating a little bit.
+12:48
+It's doing fine."
+12:50
+And so what we learned is that for Engine to work well,
+12:53
+Engine needed to work differently for the different teams
+12:55
+that we were serving.
+The agent overview: Engine's memory file
+12:56
+And so with that in mind, we've allowed for Engine
+13:00
+to learn from our customers' behaviors.
+13:03
+So whether that is changing the priority of an issue
+13:06
+that is surfaced, whether that is ignoring an issue altogether
+13:09
+and providing reasoning for why this doesn't matter to you,
+13:12
+or providing any other kind of natural language feedback —
+13:15
+all of that feeds into what we call the agent overview, which
+13:17
+is kind of like a memory file for Engine
+13:20
+to understand what you care about and how your agent works.
+13:24
+We're really excited about the process
+13:26
+that we've undergone to improve Engine
+13:28
+and make this better for our customers.
+13:30
+We've been observing it very closely,
+13:32
+and we've been evaluating it very closely.
+13:34
+And to talk about the process of evaluating Engine,
+13:37
+I will pass it off to Viv.
+Passing to Viv: evaluating Engine itself
+13:40
+Thank you, thank you.
+13:41
+[APPLAUSE]
+13:42
+Shout out to Ben.
+13:43
+Big shout out to Ben.
+13:45
+Amazing.
+13:46
+So like Ben mentioned, Engine today
+13:49
+did not look like Engine four weeks ago.
+13:52
+And the question that I really care about
+13:55
+is: how do we know that Engine is working?
+13:57
+How do we know it's working today?
+13:59
+How do we know it was working four weeks ago?
+14:01
+And how do we know it's going to work two months from now?
+Why evals are the only answer
+14:04
+The answer to that question is, of course, evals.
+14:07
+It's always evals, actually.
+14:09
+So like Ben mentioned, Engine does three main things.
+14:12
+It identifies issue traces from a huge corpus of data.
+14:17
+It generates fixes.
+14:18
+And — a little bit of eval-ception —
+14:20
+it creates evals.
+14:22
+And for all of those things, we need evals.
+14:25
+So we need evals for Engine to create evals for you —
+14:28
+basically.
+How we bootstrapped evals (dogfooding + synthetic data)
+14:31
+How do we actually get those evals?
+14:32
+Well, the main way that we source them
+14:35
+is from internal traces.
+14:36
+So like Ben mentioned, we turned Engine on
+14:39
+for a background coding agent, OpenSWE, or for a GTM agent.
+14:43
+That gave us real user data — we were the users —
+14:45
+for how is Engine doing?
+14:48
+How can we improve it?
+14:49
+And that kicked off this feedback cycle of saying:
+14:52
+okay, Engine's not that great here,
+14:53
+but let's take those traces and turn them into evals.
+14:56
+Dogfooding is a really good way,
+14:58
+if you are your own users, to bootstrap evals.
+15:01
+The other approach is synthetic data —
+15:03
+asking an LLM to generate
+15:07
+what a good eval looks like.
+15:08
+I include human review here in particular
+15:10
+because LLMs are really smart,
+15:12
+but they're actually very bad at this task —
+15:14
+generating a good eval.
+15:17
+They need a lot of rubrics and a lot of guidance
+15:19
+and a lot of human review to determine:
+15:21
+okay, this is a good eval, this is not.
+Building a diverse and rounded eval suite
+15:24
+And the third approach is community evals —
+15:28
+we love the open community of evals.
+15:32
+But what we found is that the best eval for our agent
+15:34
+is one that's bespoke for our agent.
+15:37
+So we use community evals to gut-check our evals,
+15:40
+but we don't always use them directly
+15:41
+to measure Engine.
+15:43
+Great, so we're getting evals from somewhere —
+15:46
+but how do we actually build a diverse
+15:48
+and well-rounded eval suite?
+15:50
+A trace can be short, it can be long,
+15:53
+it can be from the finance domain,
+15:55
+it can be from the medical domain.
+15:56
+We want to have evals that basically capture
+15:59
+that entire suite of data.
+16:02
+The other thing is scenario-based tasks.
+16:04
+I might just want to measure how good Engine
+16:08
+is at calling a specific tool.
+16:10
+The best way to do that is by making a targeted task that
+16:13
+just measures that.
+How evals inform model selection and prompt decisions
+16:14
+And I just said targeted task — then I say end-to-end evals.
+16:17
+Because really, what we found is the best way to measure Engine
+16:21
+is by putting in a representative set of traces
+16:24
+and seeing the entire loop end-to-end.
+16:27
+And that allows us to do sub-piece optimization.
+16:30
+Like I said: let's just focus on this tool.
+16:32
+Let's just focus on this prompt.
+16:34
+Let's just focus on the skill that we vibe-coded, right?
+16:37
+Let's focus on those pieces.
+16:40
+And how do those evals actually inform our decisions?
+16:44
+Today, every month we see a new model drop.
+16:47
+There's 5.5, there's 4.7, there's 4.6, there's 4.5.
+16:51
+The fact that you all understand
+16:52
+what those numbers mean is wild.
+16:54
+But every month, we have to look at what models we're picking.
+16:58
+That can be based on performance, cost, latency —
+17:01
+and all of these are feedback signals that Engine takes in
+17:04
+and can offer up as suggestions to our customers.
+17:08
+The other thing is: context engineering still matters a ton.
+17:12
+How should we design the tools?
+17:13
+We don't want to put 30 tools into Engine.
+17:15
+We designed Engine to be autonomous
+17:17
+and gave it a minimal set of tools
+17:19
+that it can orchestrate itself.
+17:21
+And the last thing — I saw a blog post
+17:23
+claiming prompt engineering is dead.
+17:25
+Viv and I did not find this to be true.
+17:27
+Prompt engineering is still very much alive.
+17:29
+And sometimes the best way to encode what your customers
+17:34
+care about is by writing very detailed, painstaking prompts.
+17:37
+And that's one thing we found in our evals.
+Beyond evals: trusting user feedback
+17:41
+And I just talked about doing this whole rigorous process —
+17:44
+I designed this eval, I took feedback from this person.
+17:48
+But now I'm talking about just vibes, basically.
+17:50
+Because I think there is a part of agent measurement
+17:54
+that can't fully be captured by evals all the time,
+17:57
+especially very early in our journey
+17:59
+when we did not have evals for Engine.
+18:01
+A big part of that was dogfooding the product,
+18:04
+using it over and over again,
+18:05
+and getting feedback that way.
+18:07
+And the first principle here is: trust user feedback.
+18:10
+This is huge for us.
+18:11
+If a customer says,
+18:13
+"Hey, Engine's kind of out of whack,"
+18:15
+and our evals say that it's not out of whack,
+18:17
+it's probably out of whack.
+18:18
+And we need to update our eval suite to measure this.
+The self-improving loop: Engine improving Engine
+18:24
+Now, this last slide is kind of the thing I'm most excited about
+18:28
+as someone who loves this research space.
+18:30
+It's the first sparks we're seeing
+18:32
+of this self-improving agent loop.
+18:36
+This is Engine — which is an agent — improving Engine.
+18:40
+Engine produces traces just like any other agent.
+18:44
+And we can take those traces, feed them back
+18:47
+into a version of Engine and say:
+18:49
+how should we improve Engine?
+18:51
+Your context management isn't good.
+18:52
+Use a different model.
+18:53
+I'm finding these issues.
+18:55
+And that's one thing I'm really excited about.
+18:57
+We'll have a bunch more to share soon.
+18:59
+But I will kick it back to Ben to bring us home.
+Key learnings and closing summary
+19:04
+Just to summarize, a couple of the key learnings
+19:06
+from this process.
+19:07
+For us, defining that very crucial point of finding
+19:11
+important and meaningful issues was really, really valuable
+19:15
+for creating a good product with Engine.
+19:18
+That definition of the most crucial point in the flow
+19:20
+is an important thing to nail
+19:22
+as you're building an agent.
+19:23
+The other thing is: while we were building Engine,
+19:25
+we were very closely monitoring and understanding
+19:27
+how our agent was performing under different scenarios.
+19:30
+And that was all possible by using tools
+19:31
+that we provide at LangChain, especially our observability
+19:34
+tools.
+19:35
+And I made this comment earlier about the preferences
+19:39
+of users that we allow and accommodate for in Engine.
+19:42
+The truth is that Engine was surfacing real,
+19:45
+accurate issues to our customers.
+19:47
+And even the accurate issues weren't always meaningful to
+19:50
+them because they were misaligned with their priorities.
+19:52
+And so accommodating that — making sure that
+19:55
+user preferences are respected by Engine — was a small fix, but
+19:58
+made a huge difference. It made Engine not just an okay,
+20:02
+functioning product, but something that really makes a
+20:03
+huge difference for our customers.
+20:05
+And then lastly, as Viv has talked about, this process of
+20:08
+creating evals is super important for making a good
+20:10
+agent.
+20:11
+High-quality evals are ultimately going to lead to
+20:13
+high-quality agents.
+20:15
+We are really excited about the future of LangSmith Engine.
+20:20
+We really feel like this is the future of LangSmith
+20:22
+and the way that our customers are going to more easily
+20:25
+have observability and create fixes
+20:27
+and create their evaluations.
+20:29
+And we're excited for that loop to spin faster
+20:31
+and for it to spin more autonomously over time.
+20:33
+And we really can't wait for you to try it out.
+Thank you
+20:36
+Thank you.
